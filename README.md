@@ -1,6 +1,7 @@
 
 # Stage d'Immersion – Division de la Comptabilité Nationale (ANSD)
 Ce répertoire regroupe l’ensemble des travaux, scripts, ressources documentaires et rapports réalisés dans le cadre de mon stage d’immersion au sein de la Division de la Comptabilité Nationale de l’Agence Nationale de la Statistique et de la Démographie (ANSD)
+
 ![Version](https://img.shields.io/badge/ENSAE-ISE1--CL-blue)
 ![Institution](https://img.shields.io/badge/ANSD-DCN-green)
 ![Domaine](https://img.shields.io/badge/Statistiques-Macro%C3%A9conomie-orange)
