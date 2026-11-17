@@ -65,6 +65,7 @@ def pettitt(x, dates=None, alpha: float = 0.05) -> ResultatRupture:
         _date(dates, idx[k]), round(m1, 2), round(m2, 2),
         round(100 * (m2 - m1) / m1, 1) if m1 else np.nan, p < alpha)
 
+
 # ==========================================================================
 # 2. BUISHAND (1982)
 # ==========================================================================
@@ -291,6 +292,7 @@ def hubert(x, dates=None, alpha: float = 0.01, k_max: int = 10) -> dict:
         "segments": segments, "sce": round(float(sce), 2), "scheffe_contigus": paires,
     }
 
+
 # ==========================================================================
 # 5. FONCTIONS DE VERIFICATION DES HYPOTHESES PREALABLES
 #    (independance, tendance, homoscedasticite, normalite)
@@ -325,6 +327,7 @@ def mann_kendall(x, alpha: float = 0.05) -> dict:
                         if p < alpha else "non significative",
             "significatif_5pct": p < alpha}
 
+
 def autocorrelation_lag1(x):
     """Verification prealable complementaire (independance des observations)."""
     x = np.asarray(x, dtype=float)
@@ -337,6 +340,7 @@ def autocorrelation_lag1(x):
     # seuil a 5 % : 1,96 / racine(n)
     seuil = 1.96 / np.sqrt(n)
     return r1, seuil, abs(r1) > seuil
+
 
 def stabilite_variance(x, alpha=0.05):
     """Verification prealable : HOMOSCEDASTICITE. La serie est coupee en son
@@ -357,6 +361,7 @@ def stabilite_variance(x, alpha=0.05):
         "variance_instable": p_levene < alpha,
     }
 
+
 def normalite_shapiro(x, alpha=0.05):
     """Verification prealable : NORMALITE des observations, testee sur la
     serie complete par le test de Shapiro-Wilk."""
@@ -367,6 +372,7 @@ def normalite_shapiro(x, alpha=0.05):
         "shapiro_p": round(float(p_sw), 4),
         "normalite_rejetee": p_sw < alpha,
     }
+
 
 # renvoie l'annee correspondant a l'indice i
 def _date(dates, i):
@@ -379,6 +385,7 @@ def _date(dates, i):
         return int(v)
     return v
 
+
 # applique les 5 procedures a une serie annuelle
 def analyser(serie: pd.Series, alpha: float = 0.05, alpha_hubert: float = 0.01) -> dict:
     s = serie.dropna()
@@ -390,6 +397,7 @@ def analyser(serie: pd.Series, alpha: float = 0.05, alpha_hubert: float = 0.01) 
         "hubert": hubert(s.values, d, alpha_hubert),
         "mann_kendall": mann_kendall(s.values, alpha),
     }
+
 
 # ==========================================================================
 # 6. CORRECTION POUR TESTS MULTIPLES (Benjamini-Hochberg / FDR)
@@ -418,7 +426,10 @@ def bh_fdr(pvals, alpha=0.05):
 # ==========================================================================
 
 # chemin du fichier Excel (a adapter) : une feuille par station
-FICHIER = r"C:\Users\hp\Desktop\STAGE_IMMERSION_ISEP2\METHODOLOGIE\Cumuls_pluvio_14stations_1961_2025.xlsx"
+# Dossier unique : le fichier de donnees y est lu, et TOUS les resultats y sont ecrits
+DOSSIER_SORTIE = r"C:\Users\hp\Desktop\STAGE_IMMERSION_ISEP2\METHODOLOGIE"
+os.makedirs(DOSSIER_SORTIE, exist_ok=True)
+FICHIER = os.path.join(DOSSIER_SORTIE, "Cumuls_pluvio_14stations_1961_2025.xlsx")
 # periode d'etude
 ANNEE_DEBUT, ANNEE_FIN = 1961, 2025
 NB_ANNEES_ATTENDU = ANNEE_FIN - ANNEE_DEBUT + 1
@@ -609,14 +620,14 @@ for tol in range(0, 6):
 df_sens = pd.DataFrame(sens)
 print(df_sens.to_string(index=False))
 # export de la sensibilite
-df_sens.to_excel("sensibilite_tolerance.xlsx", index=False)
+df_sens.to_excel(os.path.join(DOSSIER_SORTIE, "sensibilite_tolerance.xlsx"), index=False)
+
 
 # ==========================================================================
 # 10. EXPORT EXCEL
 # ==========================================================================
 
 # dossier de sortie = celui du fichier de donnees
-DOSSIER_SORTIE = os.path.dirname(FICHIER)
 # export des 3 tableaux ; si Excel est ouvert, nom horodate
 try:
     with pd.ExcelWriter(os.path.join(DOSSIER_SORTIE, "resultats_4tests_ruptures.xlsx")) as writer:
@@ -633,6 +644,7 @@ except PermissionError:
         df_verif.to_excel(writer, sheet_name="verif_hypotheses", index=False)
         pd.DataFrame(segments_hubert_tout).to_excel(writer, sheet_name="segments_hubert", index=False)
     print(f"[!] Fichier verrouille, exporte sous : {chemin}")
+
 
 # ==========================================================================
 # 11. GRAPHIQUES
@@ -663,7 +675,7 @@ for i, station in enumerate(df_final["station"]):
     ax.set_ylabel("mm")
 fig.suptitle("Cumuls pluviométriques annuels et rupture détectée (1961-2025)", fontsize=14, y=1.0)
 fig.tight_layout()
-fig.savefig("graph1_series_ruptures.png", dpi=150, bbox_inches="tight")
+fig.savefig(os.path.join(DOSSIER_SORTIE, "graph1_series_ruptures.png"), dpi=150, bbox_inches="tight")
 plt.close(fig)
 
 # --- Heatmap de significativite (Pettitt, Buishand) ---
@@ -675,7 +687,7 @@ sns.heatmap(sig_matrix, cmap=["#f0f0f0", "#2e7d32"], cbar=False, linewidths=1, l
 ax.set_title("Significativité des tests (p < 0.05)")
 ax.set_ylabel("")
 fig.tight_layout()
-fig.savefig("graph2_heatmap_signif.png", dpi=150)
+fig.savefig(os.path.join(DOSSIER_SORTIE, "graph2_heatmap_signif.png"), dpi=150)
 plt.close(fig)
 
 # --- Convergence des 4 procedures (barres) ---
@@ -689,7 +701,7 @@ ax.set_xlabel("Nombre de procédures convergentes (sur 4)")
 ax.set_title("Robustesse de la rupture détectée par station")
 ax.legend()
 fig.tight_layout()
-fig.savefig("graph3_convergence.png", dpi=150)
+fig.savefig(os.path.join(DOSSIER_SORTIE, "graph3_convergence.png"), dpi=150)
 plt.close(fig)
 
 print("\n3 graphiques generes : graph1_series_ruptures.png, graph2_heatmap_signif.png, graph3_convergence.png")
@@ -738,7 +750,7 @@ def comparaison_moyennes(x, annees, date_rupture, alpha: float = 0.05) -> dict:
     automatiquement sur le test de Welch si l'hypothese n'est pas verifiee."""
     x = np.asarray(x, dtype=float)
     annees = np.asarray(annees)
-    # sous-periodes avant et apres la rupture
+    # sous-periodes avant / apres la rupture
     avant = x[annees <= date_rupture]
     apres = x[annees > date_rupture]
 
@@ -823,6 +835,9 @@ def analyser_acp(df_annees_stations: pd.DataFrame, seuil_kaiser: float = 1.0) ->
     le critere de Kaiser (valeur propre > 1)."""
     # centrage-reduction (ACP normee)
     Z = StandardScaler().fit_transform(df_annees_stations.values)
+    # correction : StandardScaler divise par n, PCA par n-1 -> on rescale pour que
+    # la somme des valeurs propres soit exactement 14 (matrice de correlation)
+    Z = Z * np.sqrt((len(Z) - 1) / len(Z))
 
     # ACP sur la matrice annees x stations
     pca = PCA()
@@ -891,7 +906,6 @@ print(resultat_acp["coordonnees_annees"].head(10).round(3).to_string())
 # ==========================================================================
 
 from scipy.cluster.hierarchy import linkage, fcluster, dendrogram
-
 def classifier_annees(df_coord: pd.DataFrame, nb_classes: int = 3) -> dict:
     """Classification ascendante hierarchique (Ward, distance euclidienne)
     sur les coordonnees factorielles issues de l'ACP."""
@@ -968,7 +982,7 @@ ax.set_title("Éboulis des valeurs propres (scree plot)")
 ax.legend()
 plt.xticks(rotation=45)
 fig.tight_layout()
-fig.savefig("graph4_eboulis_acp.png", dpi=150)
+fig.savefig(os.path.join(DOSSIER_SORTIE, "graph4_eboulis_acp.png"), dpi=150)
 plt.close(fig)
 
 #============== Cercle des correlations (axes 1 et 2) ==============#
@@ -981,7 +995,8 @@ ax.axvline(0, color="gray", linewidth=0.5)
 for station in resultat_acp["loadings_stations"].index:
     x_l = resultat_acp["loadings_stations"].loc[station, "Axe1"]
     y_l = resultat_acp["loadings_stations"].loc[station, "Axe2"]
-    ax.arrow(0, 0, x_l, y_l, head_width=0.02, color="darkorange")
+    ax.arrow(0, 0, x_l, y_l, head_width=0.02, color="darkorange",
+             length_includes_head=True)  # la pointe s'arrete exactement a la correlation
     ax.text(x_l * 1.08, y_l * 1.08, station, fontsize=8)
 ax.set_xlim(-1.1, 1.1)
 ax.set_ylim(-1.1, 1.1)
@@ -990,7 +1005,7 @@ ax.set_ylabel(f"Axe 2 ({vp.loc[1, 'part_expliquee_pct']}%)")
 ax.set_title("Cercle des corrélations (stations)")
 ax.set_aspect("equal")
 fig.tight_layout()
-fig.savefig("graph5_cercle_correlations.png", dpi=150)
+fig.savefig(os.path.join(DOSSIER_SORTIE, "graph5_cercle_correlations.png"), dpi=150)
 plt.close(fig)
 
 #==============Projection des annees, coloree par classe==============#
@@ -1012,7 +1027,7 @@ ax.set_ylabel(f"Axe 2 ({vp.loc[1, 'part_expliquee_pct']}%)")
 ax.set_title("Projection des années selon les régimes pluviométriques")
 ax.legend()
 fig.tight_layout()
-fig.savefig("graph6_projection_annees.png", dpi=150)
+fig.savefig(os.path.join(DOSSIER_SORTIE, "graph6_projection_annees.png"), dpi=150)
 plt.close(fig)
 
 #==============Dendrogramme ==============#
@@ -1022,7 +1037,7 @@ dendrogram(resultat_cah["linkage"], labels=df_acp_brut.index.astype(str).tolist(
 ax.set_title("Dendrogramme (CAH, critère de Ward)")
 ax.set_ylabel("Inertie")
 fig.tight_layout()
-fig.savefig("graph7_dendrogramme.png", dpi=150)
+fig.savefig(os.path.join(DOSSIER_SORTIE, "graph7_dendrogramme.png"), dpi=150)
 plt.close(fig)
 
 print("\n4 graphiques generes : graph4_eboulis_acp.png, graph5_cercle_correlations.png, "
